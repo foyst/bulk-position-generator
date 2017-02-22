@@ -32,7 +32,6 @@ object Main extends App {
   implicit val system = ActorSystem.create("PositionGenerator")
   implicit val materializer = ActorMaterializer()
 
-  //      val positionCount = 60000000
   val positionCount = 100000
 
   val geofenceFilename = "uk-geofence.json"
@@ -52,13 +51,13 @@ object Main extends App {
   val startTime = System.nanoTime()
 
   val positionStream = Source.fromGraph(CoordinateGeneratingSource(latitudeRange, longitudeRange))
-    //    .mapAsyncUnordered(30)(x => (geofenceFilter(x)).mapTo[Tuple2[Coordinates, Boolean]])
-    .mapAsyncUnordered(30)(x => (Future {concurrentGeofenceFilter.filter(x)}).mapTo[Tuple2[Coordinates, Boolean]])
+//        .mapAsyncUnordered(10)(x => (geofenceFilter(x)).mapTo[Tuple2[Coordinates, Boolean]])
+    .mapAsyncUnordered(10)(x => (Future {concurrentGeofenceFilter.filter(x)}).mapTo[Tuple2[Coordinates, Boolean]])
     .filter(element => element._2)
     .take(positionCount)
     .map(tuple => tuple._1)
-    .toMat(Flows.writeGeoJson(outputFile))(Keep.right).run()
-
+//    .toMat(Flows.writeGeoJson(outputFile))(Keep.right).run()
+    .runWith(Sink.ignore)
 
   positionStream.onComplete { _ =>
     val endTime = System.nanoTime()
